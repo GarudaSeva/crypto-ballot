@@ -8,7 +8,7 @@ const Index = () => {
       {/* Hero Section */}
       <header className="relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-accent/80 blockchain-pattern" />
+        <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-br from-primary via-primary/95 to-accent/80" />
         
         {/* Navigation */}
         <nav className="relative z-10 container mx-auto px-4 py-6">
@@ -22,13 +22,13 @@ const Index = () => {
                 <p className="text-white/70 text-xs">Blockchain Secured</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            {/* <div className="flex items-center gap-3">
               <Link to="/admin/login">
                 <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
                   Admin Login
                 </Button>
               </Link>
-            </div>
+            </div> */}
           </div>
         </nav>
 
@@ -81,7 +81,7 @@ const Index = () => {
       </header>
 
       {/* Features Section */}
-      <section className="py-20 md:py-32">
+      {/* <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h3 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -134,7 +134,7 @@ const Index = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* How It Works Section */}
       <section className="py-20 bg-muted/50">
@@ -192,7 +192,7 @@ const Index = () => {
       </section>
 
       {/* Election Types Preview */}
-      <section className="py-20 md:py-32">
+      {/* <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h3 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -221,10 +221,10 @@ const Index = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary via-primary/95 to-accent/80 blockchain-pattern">
+      <section className="py-20 bg-gradient-to-br from-primary via-primary/95 to-accent/80">
         <div className="container mx-auto px-4 text-center">
           <h3 className="font-display text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Cast Your Vote?
@@ -246,7 +246,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-card border-t border-border">
+      {/* <footer className="py-12 bg-card border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
@@ -271,7 +271,7 @@ const Index = () => {
             </div>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 };

@@ -21,7 +21,7 @@ const Connect = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/95 to-accent/80 blockchain-pattern p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/95 to-accent/80 p-12 flex-col justify-between">
         <Link to="/" className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
             <Vote className="w-7 h-7 text-white" />
@@ -139,12 +139,12 @@ const Connect = () => {
             </div>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-10">
+          {/* <p className="text-center text-sm text-muted-foreground mt-10">
             Are you an administrator?{' '}
             <Link to="/admin/login" className="text-primary hover:underline font-medium">
               Login as Admin
             </Link>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>
