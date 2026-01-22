@@ -23,146 +23,130 @@ export async function api<T = any>(path: string, options: { method?: Method; bod
   return res.json();
 }
 
-// ============ HEALTH CHECK ============
-export async function health() {
-  return api('/health');
-}
-
-// ============ AUTH APIs ============
+// ============ TYPES ============
 export interface LoginRequest {
   email?: string;
   password?: string;
   walletAddress?: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'voter';
+}
+
 export interface LoginResponse {
   token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'voter';
-    walletAddress?: string;
-  };
+  user: User;
 }
 
-export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return api('/auth/login', { method: 'POST', body: data });
+export interface MeResponse {
+  user: User;
 }
 
-export async function getMe(token: string) {
-  return api('/auth/me', { token });
+export interface Voter {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
 }
 
-// ============ ELECTION APIs ============
 export interface Election {
   _id: string;
   name: string;
   description?: string;
-  type?: 'village' | 'mla' | 'mlc' | 'municipal';
   startsAt: string;
   endsAt: string;
-  status?: 'upcoming' | 'active' | 'closed';
   createdAt?: string;
-  updatedAt?: string;
 }
 
-export interface CreateElectionRequest {
-  name: string;
-  description?: string;
-  type?: 'village' | 'mla' | 'mlc' | 'municipal';
-  startsAt: string;
-  endsAt: string;
-}
-
-export async function createElection(data: CreateElectionRequest, token: string) {
-  return api<{ election: Election }>('/elections', { method: 'POST', body: data, token });
-}
-
-export async function listElections(token: string) {
-  return api<{ elections: Election[] }>('/elections', { token });
-}
-
-export async function getElection(id: string, token: string) {
-  return api<{ election: Election; candidates: Candidate[]; totalVotes: number }>(`/elections/${id}`, { token });
-}
-
-export async function updateElection(id: string, data: Partial<CreateElectionRequest> & { status?: string }, token: string) {
-  return api<{ election: Election }>(`/elections/${id}`, { method: 'PUT', body: data, token });
-}
-
-export async function deleteElection(id: string, token: string) {
-  return api<{ message: string }>(`/elections/${id}`, { method: 'DELETE', token });
-}
-
-export async function getActiveElections(token: string) {
-  return api<{ elections: Election[] }>('/elections/active', { token });
-}
-
-// ============ CANDIDATE APIs ============
 export interface Candidate {
   _id: string;
   election: string;
   name: string;
   party?: string;
-  symbol?: string;
   manifesto?: string;
-  description?: string;
+}
+
+export interface Vote {
+  _id: string;
+  election: Election;
+  candidate: Candidate;
+  voter: string;
   createdAt?: string;
-  updatedAt?: string;
 }
 
-export interface CreateCandidateRequest {
-  name: string;
-  party?: string;
-  symbol?: string;
-  manifesto?: string;
-  description?: string;
+export interface DashboardStats {
+  voters: number;
+  elections: number;
+  votes: number;
 }
 
-export async function addCandidate(electionId: string, data: CreateCandidateRequest, token: string) {
-  return api<{ candidate: Candidate }>(`/elections/${electionId}/candidates`, { method: 'POST', body: data, token });
+export interface ElectionResult {
+  candidate: Candidate;
+  votes: number;
 }
 
-export async function deleteCandidate(electionId: string, candidateId: string, token: string) {
-  return api<{ message: string }>(`/elections/${electionId}/candidates/${candidateId}`, { method: 'DELETE', token });
+// ============ AUTH ============
+export async function health() {
+  return api('/health');
 }
 
-// ============ VOTE APIs ============
-export interface CastVoteRequest {
-  electionId: string;
-  candidateId: string;
+export async function login(credentials: LoginRequest): Promise<LoginResponse> {
+  return api('/auth/login', { method: 'POST', body: credentials });
 }
 
-export async function castVote(data: CastVoteRequest, token: string) {
-  return api<{ voteId: string }>('/votes', { method: 'POST', body: data, token });
+export async function getMe(token: string): Promise<MeResponse> {
+  return api('/auth/me', { token });
 }
 
-export async function getMyVotes(token: string) {
-  return api<{ votes: any[] }>('/votes/my', { token });
+// ============ ADMIN: VOTERS ============
+export async function addVoter(data: { name: string; email: string; password: string }, token: string) {
+  return api('/voters', { method: 'POST', body: data, token });
 }
 
-// ============ RESULTS APIs ============
-export async function getElectionResults(electionId: string, token: string) {
-  return api<{ totalVotes: number; results: Array<{ candidate: Candidate; votes: number }> }>(`/results/${electionId}`, { token });
+export async function listVoters(token: string): Promise<{ voters: Voter[] }> {
+  return api('/voters', { token });
 }
 
-// ============ VOTER APIs (Admin Only) ============
-export interface CreateVoterRequest {
-  name: string;
-  email: string;
-  password: string;
+// ============ ELECTIONS ============
+export async function createElection(data: { name: string; description?: string; startsAt: string; endsAt: string }, token: string) {
+  return api('/elections', { method: 'POST', body: data, token });
 }
 
-export async function addVoter(data: CreateVoterRequest, token: string) {
-  return api<{ id: string; name: string; email: string }>('/voters', { method: 'POST', body: data, token });
+export async function listElections(token: string): Promise<{ elections: Election[] }> {
+  return api('/elections', { token });
 }
 
-export async function listVoters(token: string) {
-  return api<{ voters: any[] }>('/voters', { token });
+export async function getActiveElections(token: string): Promise<{ elections: Election[] }> {
+  return api('/elections/active', { token });
 }
 
-// ============ DASHBOARD APIs (Admin Only) ============
-export async function getDashboardStats(token: string) {
-  return api<{ voters: number; elections: number; votes: number }>('/dashboard', { token });
+export async function getElection(id: string, token: string): Promise<{ election: Election; candidates: Candidate[]; totalVotes: number }> {
+  return api(`/elections/${id}`, { token });
+}
+
+export async function addCandidate(electionId: string, data: { name: string; party?: string; manifesto?: string }, token: string) {
+  return api(`/elections/${electionId}/candidates`, { method: 'POST', body: data, token });
+}
+
+// ============ VOTING ============
+export async function castVote(data: { electionId: string; candidateId: string }, token: string) {
+  return api('/votes', { method: 'POST', body: data, token });
+}
+
+export async function getMyVotes(token: string): Promise<{ votes: Vote[] }> {
+  return api('/votes/my', { token });
+}
+
+// ============ RESULTS ============
+export async function getElectionResults(electionId: string, token: string): Promise<{ totalVotes: number; results: ElectionResult[] }> {
+  return api(`/results/${electionId}`, { token });
+}
+
+// ============ DASHBOARD ============
+export async function getDashboardStats(token: string): Promise<DashboardStats> {
+  return api('/dashboard', { token });
 }

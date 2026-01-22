@@ -99,7 +99,7 @@ const AdminLogin = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@evoting.com"
+                placeholder="admin@crypto.local"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -139,7 +139,7 @@ const AdminLogin = () => {
           <div className="mt-8 p-4 bg-muted/50 rounded-xl border border-border">
             <p className="text-sm text-muted-foreground text-center">
               <strong className="text-foreground">Demo credentials:</strong><br />
-              Email: admin@evoting.com<br />
+              Email: admin@crypto.local<br />
               Password: admin123
             </p>
           </div>
