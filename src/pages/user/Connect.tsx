@@ -139,12 +139,12 @@ const Connect = () => {
             </div>
           </div>
 
-          {/* <p className="text-center text-sm text-muted-foreground mt-10">
+          <p className="text-center text-sm text-muted-foreground mt-10">
             Are you an administrator?{' '}
             <Link to="/admin/login" className="text-primary hover:underline font-medium">
               Login as Admin
             </Link>
-          </p> */}
+          </p>
         </div>
       </div>
     </div>

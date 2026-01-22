@@ -1,17 +1,35 @@
+import { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/Layout/AdminSidebar';
 import StatsCard from '@/components/Cards/StatsCard';
 import { useElection } from '@/contexts/ElectionContext';
-import { Vote, Users, BarChart3, Clock, Activity } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Vote, Users, BarChart3, Activity } from 'lucide-react';
+import * as api from '@/lib/api';
 
 const AdminDashboard = () => {
   const { elections } = useElection();
+  const { token } = useAuth();
+  const [stats, setStats] = useState({ voters: 0, elections: 0, votes: 0 });
+
+  useEffect(() => {
+    if (token) {
+      loadStats();
+    }
+  }, [token]);
+
+  const loadStats = async () => {
+    if (!token) return;
+    try {
+      const data = await api.getDashboardStats(token);
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  };
 
   const totalElections = elections.length;
   const activeElections = elections.filter(e => e.status === 'active').length;
   const totalCandidates = elections.reduce((sum, e) => sum + e.candidates.length, 0);
-  const totalVotes = elections.reduce((sum, e) => 
-    sum + e.candidates.reduce((cSum, c) => cSum + c.votes, 0), 0
-  );
 
   const recentElections = elections.slice(0, 5);
 
@@ -50,7 +68,7 @@ const AdminDashboard = () => {
           />
           <StatsCard
             title="Total Votes Cast"
-            value={totalVotes.toLocaleString()}
+            value={stats.votes.toLocaleString()}
             icon={BarChart3}
             variant="success"
           />

@@ -14,11 +14,15 @@ import {
 } from '@/components/ui/select';
 import { Plus, Users, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ManageCandidates = () => {
   const { elections, addCandidate, removeCandidate } = useElection();
+  const { isAdmin } = useAuth();
   const [selectedElection, setSelectedElection] = useState<string>(elections[0]?.id || '');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isRemoving, setIsRemoving] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     party: '',
@@ -30,31 +34,54 @@ const ManageCandidates = () => {
 
   const symbolOptions = ['🌾', '🌻', '🌿', '🏛️', '⚡', '📚', '🌟', '🔔', '🎯', '🛡️', '🌈', '🔥'];
 
-  const handleAddCandidate = (e: React.FormEvent) => {
+  const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsAdding(true);
     
-    if (!selectedElection) return;
+    try {
+      if (!selectedElection) return;
 
-    addCandidate(selectedElection, formData);
+      await addCandidate(selectedElection, {
+        name: formData.name,
+        party: formData.party,
+        symbol: formData.symbol,
+        description: formData.description,
+      });
 
-    toast.success('Candidate Added!', {
-      description: `${formData.name} has been added to the election.`,
-    });
+      toast.success('Candidate Added!', {
+        description: `${formData.name} has been added to the election.`,
+      });
 
-    setFormData({
-      name: '',
-      party: '',
-      symbol: '🌟',
-      description: '',
-    });
-    setShowAddForm(false);
+      setFormData({
+        name: '',
+        party: '',
+        symbol: '🌟',
+        description: '',
+      });
+      setShowAddForm(false);
+    } catch (error: any) {
+      toast.error('Failed to add candidate', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsAdding(false);
+    }
   };
 
-  const handleRemoveCandidate = (candidateId: string, candidateName: string) => {
+  const handleRemoveCandidate = async (candidateId: string, candidateName: string) => {
     if (!selectedElection) return;
+    setIsRemoving(candidateId);
     
-    removeCandidate(selectedElection, candidateId);
-    toast.success(`${candidateName} has been removed from the election.`);
+    try {
+      await removeCandidate(selectedElection, candidateId);
+      toast.success(`${candidateName} has been removed from the election.`);
+    } catch (error: any) {
+      toast.error('Failed to remove candidate', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsRemoving(null);
+    }
   };
 
   const canAddCandidate = election?.status === 'upcoming';
@@ -105,12 +132,17 @@ const ManageCandidates = () => {
             <Button
               variant="gradient"
               onClick={() => setShowAddForm(true)}
-              disabled={!canAddCandidate}
+              disabled={!canAddCandidate || !isAdmin}
               className="gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Candidate
             </Button>
+            {!isAdmin && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Login as admin to add or remove candidates
+              </p>
+            )}
           </div>
           {!canAddCandidate && selectedElection && (
             <p className="text-sm text-warning mt-3">
@@ -196,11 +228,12 @@ const ManageCandidates = () => {
                     variant="outline"
                     className="flex-1"
                     onClick={() => setShowAddForm(false)}
+                    disabled={isAdding}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" variant="gradient" className="flex-1">
-                    Add Candidate
+                  <Button type="submit" variant="gradient" className="flex-1" disabled={!isAdmin || isAdding}>
+                    {isAdding ? 'Adding...' : 'Add Candidate'}
                   </Button>
                 </div>
               </form>
@@ -239,7 +272,9 @@ const ManageCandidates = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveCandidate(candidate.id, candidate.name)}
+                        disabled={!isAdmin || isRemoving === candidate.id}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title={isRemoving === candidate.id ? 'Removing...' : 'Remove candidate'}
                       >
                         <Trash2 className="w-5 h-5" />
                       </Button>

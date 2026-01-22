@@ -5,6 +5,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
+import { useAuth } from "./AuthContext";
 
 interface WalletContextType {
   isConnected: boolean;
@@ -25,6 +26,7 @@ export const useWallet = () => {
 };
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
+  const { login, logout, isAuthenticated } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -44,16 +46,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         method: "eth_requestAccounts",
       });
 
-      setWalletAddress(accounts[0]);
+      const address = accounts[0];
+      setWalletAddress(address);
       setIsConnected(true);
+
+      // Login via wallet
+      await login({ walletAddress: address });
 
       // persist state
       localStorage.setItem("walletConnected", "true");
-      localStorage.setItem("walletAddress", accounts[0]);
+      localStorage.setItem("walletAddress", address);
 
-      console.log("Connected wallet:", accounts[0]);
+      console.log("Connected wallet:", address);
     } catch (error) {
       console.error("MetaMask connection failed:", error);
+      setIsConnected(false);
+      setWalletAddress(null);
     } finally {
       setIsConnecting(false);
     }
@@ -63,6 +71,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const disconnectWallet = () => {
     setIsConnected(false);
     setWalletAddress(null);
+    logout();
 
     // clear persistence
     localStorage.removeItem("walletConnected");
@@ -81,12 +90,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         method: "eth_accounts",
       });
 
-      if (accounts.length > 0) {
-        setWalletAddress(accounts[0]);
+      if (accounts.length > 0 && !isAuthenticated) {
+        const address = accounts[0];
+        setWalletAddress(address);
         setIsConnected(true);
 
-        localStorage.setItem("walletConnected", "true");
-        localStorage.setItem("walletAddress", accounts[0]);
+        // Auto-login via wallet
+        try {
+          await login({ walletAddress: address });
+          localStorage.setItem("walletConnected", "true");
+          localStorage.setItem("walletAddress", address);
+        } catch (error) {
+          console.error("Auto-login failed:", error);
+          setIsConnected(false);
+          setWalletAddress(null);
+        }
       }
     };
 
@@ -98,15 +116,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const { ethereum } = window as any;
     if (!ethereum) return;
 
-    const handleAccountsChanged = (accounts: string[]) => {
+    const handleAccountsChanged = async (accounts: string[]) => {
       if (accounts.length === 0) {
         disconnectWallet();
       } else {
-        setWalletAddress(accounts[0]);
+        const address = accounts[0];
+        setWalletAddress(address);
         setIsConnected(true);
 
-        localStorage.setItem("walletConnected", "true");
-        localStorage.setItem("walletAddress", accounts[0]);
+        // Re-login with new account
+        try {
+          await login({ walletAddress: address });
+          localStorage.setItem("walletConnected", "true");
+          localStorage.setItem("walletAddress", address);
+        } catch (error) {
+          console.error("Re-login failed:", error);
+          disconnectWallet();
+        }
       }
     };
 

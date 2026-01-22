@@ -15,3 +15,9 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
+
+
+### admin credentials
+ADMIN_EMAIL=admin@crypto.local
+ADMIN_PASSWORD=admin123
+ADMIN_NAME=Super Admin

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import * as api from '@/lib/api';
+import { useAuth } from './AuthContext';
 
 export interface Candidate {
   id: string;
@@ -23,11 +25,14 @@ export interface Election {
 interface ElectionContextType {
   elections: Election[];
   votedElections: string[];
+  loading: boolean;
   castVote: (electionId: string, candidateId: string) => Promise<boolean>;
-  addElection: (election: Omit<Election, 'id' | 'candidates'>) => void;
-  addCandidate: (electionId: string, candidate: Omit<Candidate, 'id' | 'votes'>) => void;
-  removeCandidate: (electionId: string, candidateId: string) => void;
-  updateElectionStatus: (electionId: string, status: Election['status']) => void;
+  addElection: (election: Omit<Election, 'id' | 'candidates'>) => Promise<void>;
+  addCandidate: (electionId: string, candidate: Omit<Candidate, 'id' | 'votes'>) => Promise<void>;
+  removeCandidate: (electionId: string, candidateId: string) => Promise<void>;
+  updateElectionStatus: (electionId: string, status: Election['status']) => Promise<void>;
+  refreshElections: () => Promise<void>;
+  getElectionDetails: (electionId: string) => Promise<void>;
 }
 
 const ElectionContext = createContext<ElectionContextType | undefined>(undefined);
@@ -40,142 +45,168 @@ export const useElection = () => {
   return context;
 };
 
-const initialElections: Election[] = [
-  {
-    id: '1',
-    name: 'Village Panchayat Election 2025',
-    type: 'village',
-    description: 'Election for Village Panchayat representatives. Choose your local leaders who will work for the development of our village.',
-    startDate: '2025-01-15',
-    endDate: '2025-01-20',
-    status: 'active',
-    candidates: [
-      { id: 'c1', name: 'Rajesh Kumar', party: 'Progressive Party', symbol: '🌾', description: 'Experienced leader with 10 years in public service', votes: 245 },
-      { id: 'c2', name: 'Sunita Devi', party: 'People\'s Union', symbol: '🌻', description: 'Social worker dedicated to women empowerment', votes: 189 },
-      { id: 'c3', name: 'Mohammed Ali', party: 'United Front', symbol: '🌿', description: 'Young leader focused on education and healthcare', votes: 156 },
-    ],
-  },
-  {
-    id: '2',
-    name: 'State MLA Election 2025',
-    type: 'mla',
-    description: 'Election for Member of Legislative Assembly. Your vote will shape the future of our state.',
-    startDate: '2025-02-01',
-    endDate: '2025-02-05',
-    status: 'upcoming',
-    candidates: [
-      { id: 'c4', name: 'Dr. Priya Sharma', party: 'National Democratic Party', symbol: '🏛️', description: 'Doctor turned politician, healthcare advocate', votes: 0 },
-      { id: 'c5', name: 'Vikram Singh', party: 'State Development Party', symbol: '⚡', description: 'Infrastructure development specialist', votes: 0 },
-    ],
-  },
-  {
-    id: '3',
-    name: 'MLC By-Election 2024',
-    type: 'mlc',
-    description: 'By-election for Member of Legislative Council seat. Cast your vote for legislative excellence.',
-    startDate: '2024-12-01',
-    endDate: '2024-12-05',
-    status: 'closed',
-    candidates: [
-      { id: 'c6', name: 'Anand Rao', party: 'Reform Party', symbol: '📚', description: 'Education reform advocate', votes: 3421 },
-      { id: 'c7', name: 'Lakshmi Naidu', party: 'Progressive Alliance', symbol: '🌟', description: 'Women rights activist', votes: 2876 },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Municipal Corporation Election',
-    type: 'municipal',
-    description: 'Election for Municipal Corporation Council members. Help shape urban development.',
-    startDate: '2025-03-10',
-    endDate: '2025-03-15',
-    status: 'upcoming',
-    candidates: [],
-  },
-];
+// Helper function to convert backend election to frontend format
+const convertElection = (backendElection: api.Election, candidates: api.Candidate[] = []): Election => {
+  return {
+    id: backendElection._id,
+    name: backendElection.name,
+    type: backendElection.type || 'village',
+    description: backendElection.description || '',
+    startDate: backendElection.startsAt,
+    endDate: backendElection.endsAt,
+    status: backendElection.status || 'upcoming',
+    candidates: candidates.map(c => ({
+      id: c._id,
+      name: c.name,
+      party: c.party || '',
+      symbol: c.symbol || '🌟',
+      description: c.description || c.manifesto || '',
+      votes: 0, // Will be populated from results API
+    })),
+  };
+};
 
 export const ElectionProvider = ({ children }: { children: ReactNode }) => {
-  const [elections, setElections] = useState<Election[]>(initialElections);
+  const { token } = useAuth();
+  const [elections, setElections] = useState<Election[]>([]);
   const [votedElections, setVotedElections] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load elections on mount and when token changes
+  useEffect(() => {
+    if (token) {
+      refreshElections();
+      loadVotedElections();
+    }
+  }, [token]);
+
+  const refreshElections = async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const response = await api.listElections(token);
+      const electionsWithCandidates = await Promise.all(
+        response.elections.map(async (election) => {
+          try {
+            const details = await api.getElection(election._id, token);
+            return convertElection(election, details.candidates);
+          } catch {
+            return convertElection(election);
+          }
+        })
+      );
+      setElections(electionsWithCandidates);
+    } catch (error) {
+      console.error('Failed to load elections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getElectionDetails = async (electionId: string) => {
+    if (!token) return;
+    try {
+      const details = await api.getElection(electionId, token);
+      setElections(prev => prev.map(election => {
+        if (election.id === electionId) {
+          return convertElection(details.election, details.candidates);
+        }
+        return election;
+      }));
+    } catch (error) {
+      console.error('Failed to load election details:', error);
+    }
+  };
+
+  const loadVotedElections = async () => {
+    if (!token) return;
+    try {
+      const response = await api.getMyVotes(token);
+      const votedIds = response.votes.map((v: any) => 
+        typeof v.election === 'string' ? v.election : v.election._id
+      );
+      setVotedElections(votedIds);
+    } catch (error) {
+      console.error('Failed to load voted elections:', error);
+    }
+  };
 
   const castVote = async (electionId: string, candidateId: string): Promise<boolean> => {
-    // Simulate blockchain transaction delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setElections(prev => prev.map(election => {
-      if (election.id === electionId) {
-        return {
-          ...election,
-          candidates: election.candidates.map(candidate => {
-            if (candidate.id === candidateId) {
-              return { ...candidate, votes: candidate.votes + 1 };
-            }
-            return candidate;
-          }),
-        };
-      }
-      return election;
-    }));
-
-    setVotedElections(prev => [...prev, electionId]);
-    return true;
+    if (!token) return false;
+    try {
+      await api.castVote({ electionId, candidateId }, token);
+      setVotedElections(prev => [...prev, electionId]);
+      await refreshElections();
+      return true;
+    } catch (error) {
+      console.error('Failed to cast vote:', error);
+      throw error;
+    }
   };
 
-  const addElection = (election: Omit<Election, 'id' | 'candidates'>) => {
-    const newElection: Election = {
-      ...election,
-      id: Date.now().toString(),
-      candidates: [],
-    };
-    setElections(prev => [...prev, newElection]);
+  const addElection = async (election: Omit<Election, 'id' | 'candidates'>) => {
+    try {
+      await api.createElection({
+        name: election.name,
+        description: election.description,
+        type: election.type,
+        startsAt: election.startDate,
+        endsAt: election.endDate,
+      }, token || '');
+      await refreshElections();
+    } catch (error) {
+      console.error('Failed to create election:', error);
+      throw error;
+    }
   };
 
-  const addCandidate = (electionId: string, candidate: Omit<Candidate, 'id' | 'votes'>) => {
-    const newCandidate: Candidate = {
-      ...candidate,
-      id: Date.now().toString(),
-      votes: 0,
-    };
-    setElections(prev => prev.map(election => {
-      if (election.id === electionId) {
-        return {
-          ...election,
-          candidates: [...election.candidates, newCandidate],
-        };
-      }
-      return election;
-    }));
+  const addCandidate = async (electionId: string, candidate: Omit<Candidate, 'id' | 'votes'>) => {
+    try {
+      await api.addCandidate(electionId, {
+        name: candidate.name,
+        party: candidate.party,
+        symbol: candidate.symbol,
+        description: candidate.description,
+      }, token || '');
+      await getElectionDetails(electionId);
+    } catch (error) {
+      console.error('Failed to add candidate:', error);
+      throw error;
+    }
   };
 
-  const removeCandidate = (electionId: string, candidateId: string) => {
-    setElections(prev => prev.map(election => {
-      if (election.id === electionId) {
-        return {
-          ...election,
-          candidates: election.candidates.filter(c => c.id !== candidateId),
-        };
-      }
-      return election;
-    }));
+  const removeCandidate = async (electionId: string, candidateId: string) => {
+    try {
+      await api.deleteCandidate(electionId, candidateId, token || '');
+      await getElectionDetails(electionId);
+    } catch (error) {
+      console.error('Failed to remove candidate:', error);
+      throw error;
+    }
   };
 
-  const updateElectionStatus = (electionId: string, status: Election['status']) => {
-    setElections(prev => prev.map(election => {
-      if (election.id === electionId) {
-        return { ...election, status };
-      }
-      return election;
-    }));
+  const updateElectionStatus = async (electionId: string, status: Election['status']) => {
+    try {
+      await api.updateElection(electionId, { status }, token || '');
+      await refreshElections();
+    } catch (error) {
+      console.error('Failed to update election status:', error);
+      throw error;
+    }
   };
 
   return (
     <ElectionContext.Provider value={{
       elections,
       votedElections,
+      loading,
       castVote,
       addElection,
       addCandidate,
       removeCandidate,
       updateElectionStatus,
+      refreshElections,
+      getElectionDetails,
     }}>
       {children}
     </ElectionContext.Provider>

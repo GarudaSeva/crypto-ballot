@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -16,19 +18,17 @@ const AdminLogin = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (email === 'admin@evoting.com' && password === 'admin123') {
+    try {
+      await login({ email, password });
       toast.success('Welcome, Admin!');
       navigate('/admin/dashboard');
-    } else {
+    } catch (error: any) {
       toast.error('Invalid credentials', {
-        description: 'Please check your email and password.',
+        description: error.message || 'Please check your email and password.',
       });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (

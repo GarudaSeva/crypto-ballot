@@ -15,10 +15,13 @@ import {
 import { Plus, Vote, Calendar, Play, Square, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ManageElections = () => {
   const { elections, addElection, updateElectionStatus } = useElection();
+  const { isAdmin } = useAuth();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     type: 'village' as Election['type'],
@@ -27,31 +30,49 @@ const ManageElections = () => {
     endDate: '',
   });
 
-  const handleCreateElection = (e: React.FormEvent) => {
+  const handleCreateElection = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsCreating(true);
     
-    addElection({
-      ...formData,
-      status: 'upcoming',
-    });
+    try {
+      await addElection({
+        name: formData.name,
+        type: formData.type,
+        description: formData.description,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+      });
 
-    toast.success('Election Created!', {
-      description: `${formData.name} has been added successfully.`,
-    });
+      toast.success('Election Created!', {
+        description: `${formData.name} has been added successfully.`,
+      });
 
-    setFormData({
-      name: '',
-      type: 'village',
-      description: '',
-      startDate: '',
-      endDate: '',
-    });
-    setShowCreateForm(false);
+      setFormData({
+        name: '',
+        type: 'village',
+        description: '',
+        startDate: '',
+        endDate: '',
+      });
+      setShowCreateForm(false);
+    } catch (error: any) {
+      toast.error('Failed to create election', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const handleStatusChange = (electionId: string, newStatus: Election['status']) => {
-    updateElectionStatus(electionId, newStatus);
-    toast.success(`Election status updated to ${newStatus}`);
+  const handleStatusChange = async (electionId: string, newStatus: Election['status']) => {
+    try {
+      await updateElectionStatus(electionId, newStatus);
+      toast.success(`Election status updated to ${newStatus}`);
+    } catch (error: any) {
+      toast.error('Failed to update election status', {
+        description: error.message || 'Please try again.',
+      });
+    }
   };
 
   const typeOptions = [
@@ -79,10 +100,16 @@ const ManageElections = () => {
             variant="gradient"
             onClick={() => setShowCreateForm(true)}
             className="gap-2"
+            disabled={!isAdmin}
           >
             <Plus className="w-4 h-4" />
             Create Election
           </Button>
+          {!isAdmin && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Login as admin to create elections
+            </p>
+          )}
         </div>
 
         {/* Create Election Modal */}
@@ -176,11 +203,12 @@ const ManageElections = () => {
                     variant="outline"
                     className="flex-1"
                     onClick={() => setShowCreateForm(false)}
+                    disabled={isCreating}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" variant="gradient" className="flex-1">
-                    Create Election
+                  <Button type="submit" variant="gradient" className="flex-1" disabled={!isAdmin || isCreating}>
+                    {isCreating ? 'Creating...' : 'Create Election'}
                   </Button>
                 </div>
               </form>
