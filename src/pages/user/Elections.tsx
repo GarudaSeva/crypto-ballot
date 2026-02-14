@@ -10,19 +10,22 @@ import { Filter } from 'lucide-react';
 type ElectionType = 'all' | 'village' | 'mla' | 'mlc' | 'municipal';
 type StatusFilter = 'all' | 'active' | 'upcoming' | 'closed';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 const Elections = () => {
   const { isConnected } = useWallet();
   const { elections, votedElections } = useElection();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [typeFilter, setTypeFilter] = useState<ElectionType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected || !isAuthenticated) {
       navigate('/user/connect');
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, isAuthenticated, navigate]);
 
   const filteredElections = elections.filter((election) => {
     const matchesType = typeFilter === 'all' || election.type === typeFilter;

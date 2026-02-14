@@ -10,6 +10,7 @@ import { ElectionProvider } from "./contexts/ElectionContext";
 // Pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import BlockchainExplorer from "./pages/BlockchainExplorer";
 
 // User Pages
 import Connect from "./pages/user/Connect";
@@ -24,6 +25,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageElections from "./pages/admin/ManageElections";
 import ManageCandidates from "./pages/admin/ManageCandidates";
+import ManageVoters from "./pages/admin/ManageVoters";
 import Reports from "./pages/admin/Reports";
 import AdminGuidelines from "./pages/admin/AdminGuidelines";
 
@@ -49,14 +51,17 @@ const App = () => (
                 <Route path="/user/elections/:id" element={<ElectionDetails />} />
                 <Route path="/user/guidelines" element={<Guidelines />} />
                 <Route path="/user/results" element={<Results />} />
+                <Route path="/user/blockchain" element={<BlockchainExplorer />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/elections" element={<ManageElections />} />
                 <Route path="/admin/candidates" element={<ManageCandidates />} />
+                <Route path="/admin/voters" element={<ManageVoters />} />
                 <Route path="/admin/reports" element={<Reports />} />
                 <Route path="/admin/guidelines" element={<AdminGuidelines />} />
+                <Route path="/admin/blockchain" element={<BlockchainExplorer />} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />

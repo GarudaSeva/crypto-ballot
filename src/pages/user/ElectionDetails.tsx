@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calendar, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ElectionDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,11 +20,12 @@ const ElectionDetails = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
 
+  const { isAuthenticated } = useAuth();
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected || !isAuthenticated) {
       navigate('/user/connect');
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, isAuthenticated, navigate]);
 
   const election = elections.find((e) => e.id === id);
   const hasVoted = id ? votedElections.includes(id) : false;
@@ -71,9 +73,9 @@ const ElectionDetails = () => {
           description: 'Your vote has been recorded on the blockchain.',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Transaction Failed', {
-        description: 'There was an error processing your vote. Please try again.',
+        description: error.message || 'There was an error processing your vote. Please try again.',
       });
     } finally {
       setVotingFor(null);

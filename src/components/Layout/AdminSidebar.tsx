@@ -7,13 +7,16 @@ import {
   BookOpen,
   LogOut,
   ChevronLeft,
-  Settings
+  Settings,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const AdminSidebar = () => {
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -22,13 +25,16 @@ const AdminSidebar = () => {
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/admin/elections', label: 'Manage Elections', icon: Vote },
     { path: '/admin/candidates', label: 'Manage Candidates', icon: Users },
+    { path: '/admin/voters', label: 'Manage Voters', icon: Settings }, // Will change icon later
     { path: '/admin/reports', label: 'Reports', icon: FileBarChart },
     { path: '/admin/guidelines', label: 'Guidelines', icon: BookOpen },
+    { path: '/admin/blockchain', label: 'Blockchain', icon: Database },
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
+    logout();
     navigate('/admin/login');
   };
 

@@ -10,7 +10,7 @@ import { useAuth } from "./AuthContext";
 interface WalletContextType {
   isConnected: boolean;
   walletAddress: string | null;
-  connectWallet: () => Promise<void>;
+  connectWallet: (aadhaarNumber?: string, name?: string) => Promise<void>;
   disconnectWallet: () => void;
   isConnecting: boolean;
 }
@@ -32,14 +32,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isConnecting, setIsConnecting] = useState(false);
 
   /* ---------------- CONNECT WALLET ---------------- */
-  const connectWallet = async () => {
+  const connectWallet = async (aadhaarNumber?: string, name?: string) => {
     try {
       setIsConnecting(true);
 
       const { ethereum } = window as any;
       if (!ethereum) {
-        alert("MetaMask is not installed");
-        return;
+        throw new Error("MetaMask is not installed");
       }
 
       const accounts: string[] = await ethereum.request({
@@ -47,21 +46,28 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const address = accounts[0];
+
+      // Login via wallet + Aadhaar + Name
+      await login({ walletAddress: address, aadhaarNumber, name });
+
+      // Only set connected if login succeeded (or didn't throw before approval message)
       setWalletAddress(address);
       setIsConnected(true);
-
-      // Login via wallet
-      await login({ walletAddress: address });
 
       // persist state
       localStorage.setItem("walletConnected", "true");
       localStorage.setItem("walletAddress", address);
+      if (aadhaarNumber) localStorage.setItem("aadhaarNumber", aadhaarNumber);
 
       console.log("Connected wallet:", address);
-    } catch (error) {
+    } catch (error: any) {
       console.error("MetaMask connection failed:", error);
-      setIsConnected(false);
-      setWalletAddress(null);
+      // Don't disconnect if it's just a verification pending message
+      if (!error.message.includes('pending') && !error.message.includes('submitted')) {
+        setIsConnected(false);
+        setWalletAddress(null);
+      }
+      throw error;
     } finally {
       setIsConnecting(false);
     }
@@ -76,6 +82,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     // clear persistence
     localStorage.removeItem("walletConnected");
     localStorage.removeItem("walletAddress");
+    localStorage.removeItem("aadhaarNumber");
 
     console.log("Wallet disconnected (app level)");
   };
@@ -83,6 +90,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   /* ---------------- AUTO RESTORE ON REFRESH ---------------- */
   useEffect(() => {
     const restoreWallet = async () => {
+      const isActuallyConnected = localStorage.getItem("walletConnected") === "true";
+      if (!isActuallyConnected) return; // Don't auto-login if user logged out manually
+
       const { ethereum } = window as any;
       if (!ethereum) return;
 
@@ -97,7 +107,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         // Auto-login via wallet
         try {
-          await login({ walletAddress: address });
+          const storedAadhaar = localStorage.getItem("aadhaarNumber");
+          await login({ walletAddress: address, aadhaarNumber: storedAadhaar || undefined });
           localStorage.setItem("walletConnected", "true");
           localStorage.setItem("walletAddress", address);
         } catch (error) {
@@ -117,7 +128,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (!ethereum) return;
 
     const handleAccountsChanged = async (accounts: string[]) => {
-      if (accounts.length === 0) {
+      const isActuallyConnected = localStorage.getItem("walletConnected") === "true";
+      
+      if (accounts.length === 0 || !isActuallyConnected) {
         disconnectWallet();
       } else {
         const address = accounts[0];
@@ -126,7 +139,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         // Re-login with new account
         try {
-          await login({ walletAddress: address });
+          const storedAadhaar = localStorage.getItem("aadhaarNumber");
+          await login({ walletAddress: address, aadhaarNumber: storedAadhaar || undefined });
           localStorage.setItem("walletConnected", "true");
           localStorage.setItem("walletAddress", address);
         } catch (error) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/Layout/AdminSidebar';
 import StatsCard from '@/components/Cards/StatsCard';
 import { useElection } from '@/contexts/ElectionContext';
@@ -11,11 +12,15 @@ const AdminDashboard = () => {
   const { token } = useAuth();
   const [stats, setStats] = useState({ voters: 0, elections: 0, votes: 0 });
 
+  const navigate = useNavigate();
+
   useEffect(() => {
-    if (token) {
-      loadStats();
+    if (!token) {
+      navigate('/admin/login');
+      return;
     }
-  }, [token]);
+    loadStats();
+  }, [token, navigate]);
 
   const loadStats = async () => {
     if (!token) return;

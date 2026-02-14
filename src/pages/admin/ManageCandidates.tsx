@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/Layout/AdminSidebar';
 import { useElection, Election } from '@/contexts/ElectionContext';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,14 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ManageCandidates = () => {
   const { elections, addCandidate, removeCandidate } = useElection();
-  const { isAdmin } = useAuth();
+  const { isAdmin, token } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [token, navigate]);
   const [selectedElection, setSelectedElection] = useState<string>(elections[0]?.id || '');
   const [showAddForm, setShowAddForm] = useState(false);
   const [isAdding, setIsAdding] = useState(false);

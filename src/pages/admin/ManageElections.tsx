@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/Layout/AdminSidebar';
 import { useElection, Election } from '@/contexts/ElectionContext';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,15 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ManageElections = () => {
   const { elections, addElection, updateElectionStatus } = useElection();
-  const { isAdmin } = useAuth();
+  const { isAdmin, token } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [token, navigate]);
+
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,6 +50,7 @@ const ManageElections = () => {
         description: formData.description,
         startDate: formData.startDate,
         endDate: formData.endDate,
+        status: 'upcoming',
       });
 
       toast.success('Election Created!', {

@@ -9,7 +9,8 @@ import {
   BookOpen,
   LogOut,
   Menu,
-  X
+  X,
+  Database
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,6 +28,7 @@ const UserNavbar = () => {
     { path: '/user/elections', label: 'Elections', icon: Vote },
     { path: '/user/guidelines', label: 'Guidelines', icon: BookOpen },
     { path: '/user/results', label: 'Results', icon: BarChart3 },
+    { path: '/user/blockchain', label: 'Blockchain', icon: Database },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -17,7 +17,7 @@ export async function api<T = any>(path: string, options: { method?: Method; bod
     try {
       const data = await res.json();
       message = data?.message || message;
-    } catch {}
+    } catch { }
     throw new Error(message);
   }
   return res.json();
@@ -28,6 +28,8 @@ export interface LoginRequest {
   email?: string;
   password?: string;
   walletAddress?: string;
+  aadhaarNumber?: string;
+  name?: string;
 }
 
 export interface User {
@@ -35,6 +37,9 @@ export interface User {
   name: string;
   email: string;
   role: 'admin' | 'voter';
+  walletAddress?: string;
+  aadhaarNumber?: string;
+  isVerified?: boolean;
 }
 
 export interface LoginResponse {
@@ -50,7 +55,10 @@ export interface Voter {
   id: string;
   name: string;
   email: string;
+  aadhaarNumber?: string;
+  walletAddress?: string;
   isActive: boolean;
+  isVerified: boolean;
 }
 
 export interface Election {
@@ -108,7 +116,17 @@ export async function addVoter(data: { name: string; email: string; password: st
 }
 
 export async function listVoters(token: string): Promise<{ voters: Voter[] }> {
-  return api('/voters', { token });
+  const result = await api<{ voters: any[] }>('/voters', { token });
+  return {
+    voters: result.voters.map(v => ({
+      ...v,
+      id: v._id // Map MongoDB _id to id expected by frontend
+    }))
+  };
+}
+
+export async function verifyVoter(voterId: string, isVerified: boolean, token: string) {
+  return api(`/voters/${voterId}/verify`, { method: 'PATCH', body: { isVerified }, token });
 }
 
 // ============ ELECTIONS ============
@@ -149,4 +167,9 @@ export async function getElectionResults(electionId: string, token: string): Pro
 // ============ DASHBOARD ============
 export async function getDashboardStats(token: string): Promise<DashboardStats> {
   return api('/dashboard', { token });
+}
+
+// ============ BLOCKCHAIN ============
+export async function getBlockchain(token: string) {
+  return api('/blockchain', { token });
 }

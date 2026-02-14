@@ -5,18 +5,20 @@ import { useElection } from '@/contexts/ElectionContext';
 import UserNavbar from '@/components/Layout/UserNavbar';
 import StatsCard from '@/components/Cards/StatsCard';
 import ElectionCard from '@/components/Cards/ElectionCard';
+import { useAuth } from '@/contexts/AuthContext';
 import { Vote, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 const Dashboard = () => {
   const { isConnected, walletAddress } = useWallet();
   const { elections, votedElections } = useElection();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected || !isAuthenticated) {
       navigate('/user/connect');
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, isAuthenticated, navigate]);
 
   const shortenAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;

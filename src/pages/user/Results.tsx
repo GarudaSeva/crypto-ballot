@@ -6,16 +6,19 @@ import UserNavbar from '@/components/Layout/UserNavbar';
 import CandidateCard from '@/components/Cards/CandidateCard';
 import { BarChart3, Trophy, Users } from 'lucide-react';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 const Results = () => {
   const { isConnected } = useWallet();
   const { elections } = useElection();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected || !isAuthenticated) {
       navigate('/user/connect');
     }
-  }, [isConnected, navigate]);
+  }, [isConnected, isAuthenticated, navigate]);
 
   const closedElections = elections.filter((e) => e.status === 'closed');
 
