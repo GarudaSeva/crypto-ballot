@@ -64,9 +64,11 @@ export interface Voter {
 export interface Election {
   _id: string;
   name: string;
+  type?: 'village' | 'mla' | 'mlc' | 'municipal';
   description?: string;
   startsAt: string;
   endsAt: string;
+  status?: 'active' | 'upcoming' | 'closed';
   createdAt?: string;
 }
 
@@ -75,7 +77,9 @@ export interface Candidate {
   election: string;
   name: string;
   party?: string;
+  symbol?: string;
   manifesto?: string;
+  description?: string;
 }
 
 export interface Vote {
@@ -146,8 +150,16 @@ export async function getElection(id: string, token: string): Promise<{ election
   return api(`/elections/${id}`, { token });
 }
 
-export async function addCandidate(electionId: string, data: { name: string; party?: string; manifesto?: string }, token: string) {
+export async function addCandidate(electionId: string, data: { name: string; party?: string; symbol?: string; manifesto?: string; description?: string }, token: string) {
   return api(`/elections/${electionId}/candidates`, { method: 'POST', body: data, token });
+}
+
+export async function updateElection(electionId: string, data: { name?: string; description?: string; type?: string; startsAt?: string; endsAt?: string; status?: string }, token: string) {
+  return api(`/elections/${electionId}`, { method: 'PUT', body: data, token });
+}
+
+export async function deleteCandidate(electionId: string, candidateId: string, token: string) {
+  return api(`/elections/${electionId}/candidates/${candidateId}`, { method: 'DELETE', token });
 }
 
 // ============ VOTING ============
