@@ -134,7 +134,7 @@ export async function verifyVoter(voterId: string, isVerified: boolean, token: s
 }
 
 // ============ ELECTIONS ============
-export async function createElection(data: { name: string; description?: string; startsAt: string; endsAt: string }, token: string) {
+export async function createElection(data: { name: string; description?: string; type?: string; startsAt: string; endsAt: string }, token: string) {
   return api('/elections', { method: 'POST', body: data, token });
 }
 

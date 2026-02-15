@@ -66,6 +66,46 @@ const convertElection = (backendElection: api.Election, candidates: api.Candidat
   };
 };
 
+// Helper function to convert election with results for closed elections
+const convertElectionWithResults = async (backendElection: api.Election, candidates: api.Candidate[], token: string): Promise<Election> => {
+  let candidatesWithVotes = candidates.map(c => ({
+    id: c._id,
+    name: c.name,
+    party: c.party || '',
+    symbol: c.symbol || '🌟',
+    description: c.description || c.manifesto || '',
+    votes: 0,
+  }));
+
+  // Fetch results for closed elections to get vote counts
+  if (backendElection.status === 'closed') {
+    try {
+      const results = await api.getElectionResults(backendElection._id, token);
+      // Update vote counts from results
+      candidatesWithVotes = candidatesWithVotes.map(candidate => {
+        const result = results.results.find((r: any) => r.candidate._id === candidate.id);
+        return {
+          ...candidate,
+          votes: result ? result.votes : 0,
+        };
+      });
+    } catch (error) {
+      console.error('Failed to fetch results for election:', backendElection._id, error);
+    }
+  }
+
+  return {
+    id: backendElection._id,
+    name: backendElection.name,
+    type: backendElection.type || 'village',
+    description: backendElection.description || '',
+    startDate: backendElection.startsAt,
+    endDate: backendElection.endsAt,
+    status: backendElection.status || 'upcoming',
+    candidates: candidatesWithVotes,
+  };
+};
+
 export const ElectionProvider = ({ children }: { children: ReactNode }) => {
   const { token } = useAuth();
   const [elections, setElections] = useState<Election[]>([]);
@@ -89,7 +129,7 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
         response.elections.map(async (election) => {
           try {
             const details = await api.getElection(election._id, token);
-            return convertElection(election, details.candidates);
+            return await convertElectionWithResults(election, details.candidates, token);
           } catch {
             return convertElection(election);
           }
