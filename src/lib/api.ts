@@ -58,6 +58,7 @@ export interface Voter {
   aadhaarNumber?: string;
   walletAddress?: string;
   isActive: boolean;
+  isApproved: boolean;
   isVerified: boolean;
 }
 
@@ -106,6 +107,10 @@ export async function health() {
   return api('/health');
 }
 
+export async function signup(data: { walletAddress: string; name?: string; email?: string }): Promise<{ message: string; user: any }> {
+  return api('/auth/signup', { method: 'POST', body: data });
+}
+
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
   return api('/auth/login', { method: 'POST', body: credentials });
 }
@@ -131,6 +136,14 @@ export async function listVoters(token: string): Promise<{ voters: Voter[] }> {
 
 export async function verifyVoter(voterId: string, isVerified: boolean, token: string) {
   return api(`/voters/${voterId}/verify`, { method: 'PATCH', body: { isVerified }, token });
+}
+
+export async function approveVoter(voterId: string, token: string) {
+  return api(`/voters/${voterId}/approve`, { method: 'PATCH', token });
+}
+
+export async function toggleVoterStatus(voterId: string, token: string) {
+  return api(`/voters/${voterId}/toggle-status`, { method: 'PATCH', token });
 }
 
 // ============ ELECTIONS ============

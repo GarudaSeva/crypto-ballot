@@ -26,7 +26,7 @@ export const useWallet = () => {
 };
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const { login, logout, isAuthenticated } = useAuth();
+  const { login, signup, logout, isAuthenticated } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -47,19 +47,30 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
       const address = accounts[0];
 
-      // Login via wallet + Aadhaar + Name
-      await login({ walletAddress: address, aadhaarNumber, name });
+      // If name is provided, this is a signup (registration)
+      if (name) {
+        await signup({ 
+          walletAddress: address, 
+          name,
+          email: `${address.toLowerCase()}@wallet.local`
+        });
+        // Don't set connected state - user needs approval first
+        throw new Error('Registration submitted. Your account is pending admin approval.');
+      } else {
+        // Otherwise, this is a login
+        await login({ walletAddress: address, aadhaarNumber });
+        
+        // Only set connected if login succeeded
+        setWalletAddress(address);
+        setIsConnected(true);
 
-      // Only set connected if login succeeded (or didn't throw before approval message)
-      setWalletAddress(address);
-      setIsConnected(true);
+        // persist state
+        localStorage.setItem("walletConnected", "true");
+        localStorage.setItem("walletAddress", address);
+        if (aadhaarNumber) localStorage.setItem("aadhaarNumber", aadhaarNumber);
 
-      // persist state
-      localStorage.setItem("walletConnected", "true");
-      localStorage.setItem("walletAddress", address);
-      if (aadhaarNumber) localStorage.setItem("aadhaarNumber", aadhaarNumber);
-
-      console.log("Connected wallet:", address);
+        console.log("Connected wallet:", address);
+      }
     } catch (error: any) {
       console.error("MetaMask connection failed:", error);
       // Don't disconnect if it's just a verification pending message

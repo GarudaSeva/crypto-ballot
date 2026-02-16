@@ -47,14 +47,25 @@ const ManageVoters = () => {
     }
   };
 
-  const handleVerify = async (voterId: string, isVerified: boolean) => {
+  const handleApprove = async (voterId: string) => {
     if (!token) return;
     try {
-      await api.verifyVoter(voterId, isVerified, token);
-      toast.success(isVerified ? 'Voter approved successfully' : 'Voter registration rejected');
+      await api.approveVoter(voterId, token);
+      toast.success('Voter approved successfully');
       loadVoters();
     } catch (error: any) {
-      toast.error(error.message || 'Action failed');
+      toast.error(error.message || 'Failed to approve voter');
+    }
+  };
+
+  const handleToggleStatus = async (voterId: string) => {
+    if (!token) return;
+    try {
+      await api.toggleVoterStatus(voterId, token);
+      toast.success('Voter status updated successfully');
+      loadVoters();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update status');
     }
   };
 
@@ -146,25 +157,35 @@ const ManageVoters = () => {
                           </div>
                         </td>
                         <td className="px-6 py-6">
-                          {voter.isVerified ? (
-                            <Badge variant="default" className="bg-success/10 text-success border-success/20 gap-1.5">
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                              Verified
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 gap-1.5">
-                              <ShieldAlert className="w-3.5 h-3.5" />
-                              Pending Approval
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {voter.isApproved ? (
+                              <Badge 
+                                variant="default" 
+                                className={cn(
+                                  "gap-1.5",
+                                  voter.isActive 
+                                    ? "bg-success/10 text-success border-success/20" 
+                                    : "bg-muted text-muted-foreground border-border"
+                                )}
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                {voter.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 gap-1.5">
+                                <ShieldAlert className="w-3.5 h-3.5" />
+                                Pending Approval
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-6">
                           <div className="flex items-center gap-2">
-                            {!voter.isVerified ? (
+                            {!voter.isApproved ? (
                               <Button 
                                 size="sm" 
                                 className="bg-success hover:bg-success/90 gap-1.5"
-                                onClick={() => handleVerify(voter.id, true)}
+                                onClick={() => handleApprove(voter.id)}
                               >
                                 <UserCheck className="w-4 h-4" />
                                 Approve
@@ -173,11 +194,25 @@ const ManageVoters = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="text-destructive hover:bg-destructive/10 border-destructive/20 gap-1.5"
-                                onClick={() => handleVerify(voter.id, false)}
+                                className={cn(
+                                  "gap-1.5",
+                                  voter.isActive 
+                                    ? "text-destructive hover:bg-destructive/10 border-destructive/20"
+                                    : "text-success hover:bg-success/10 border-success/20"
+                                )}
+                                onClick={() => handleToggleStatus(voter.id)}
                               >
-                                <UserX className="w-4 h-4" />
-                                Revoke
+                                {voter.isActive ? (
+                                  <>
+                                    <UserX className="w-4 h-4" />
+                                    Deactivate
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="w-4 h-4" />
+                                    Activate
+                                  </>
+                                )}
                               </Button>
                             )}
                           </div>

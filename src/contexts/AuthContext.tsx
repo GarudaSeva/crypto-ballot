@@ -14,6 +14,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  signup: (data: { walletAddress: string; name?: string; email?: string }) => Promise<void>;
   login: (credentials: api.LoginRequest) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -43,6 +44,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       refreshUser();
     }
   }, [token]);
+
+  const signup = async (data: { walletAddress: string; name?: string; email?: string }) => {
+    await api.signup(data);
+    // Don't set token or user - user needs admin approval first
+    // The signup endpoint returns a message about pending approval
+  };
 
   const login = async (credentials: api.LoginRequest) => {
     const response = await api.login(credentials);
@@ -75,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token,
         isAuthenticated,
         isAdmin,
+        signup,
         login,
         logout,
         refreshUser,
